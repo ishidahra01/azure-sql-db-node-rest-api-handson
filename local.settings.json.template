@@ -3,9 +3,9 @@
   "Values": {
     "FUNCTIONS_WORKER_RUNTIME": "node",
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "db_server": "<server>.database.windows.net",
-    "db_database": "<database>",
-    "db_user": "NodeFuncApp",
-    "db_password": "aN0ThErREALLY#$%TRONGpa44w0rd!"
+    "db_server": "<yourserver>.database.windows.net",
+    "db_database": "hands_on_db",
+    "db_user": "<your_admin_user>",
+    "db_password": "<your_password>"
   }
 }

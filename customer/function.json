@@ -6,10 +6,7 @@
       "direction": "in",
       "name": "req",
       "methods": [
-        "get",
-        "put",
-        "patch",
-        "delete"
+        "get"
       ],
       "route": "customer/{id:int?}"
     },
