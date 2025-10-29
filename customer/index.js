@@ -2,10 +2,8 @@ var Connection = require('tedious').Connection;
 var Request = require('tedious').Request
 var TYPES = require('tedious').TYPES;
 
-const executeSQL = (context, verb, entity, payload) => {
-    var result = "";    
-    const paramPayload = (payload != null) ? JSON.stringify(payload) : '';
-    context.log(payload);
+const executeSQL = (context, procedureName, customerId = null) => {
+    var result = "";
 
     // Create Connection object
     const connection = new Connection({
@@ -24,20 +22,26 @@ const executeSQL = (context, verb, entity, payload) => {
     });
 
     // Create the command to be executed
-    const request = new Request(`web.${verb}_${entity}`, (err) => {
+    const request = new Request(procedureName, (err) => {
         if (err) {
             context.log.error(err);            
             context.res.status = 500;
             context.res.body = "Error executing T-SQL command";
         } else {
             context.res = {
-                body: result
+                body: result,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             }   
         }
         context.done();
-    });    
-    if (payload)
-        request.addParameter('Json', TYPES.NVarChar, paramPayload, Infinity);
+    });
+    
+    // Add parameter if customerId is provided
+    if (customerId !== null) {
+        request.addParameter('CustomerID', TYPES.Int, customerId);
+    }
 
     // Handle 'connect' event
     connection.on('connect', err => {
@@ -49,7 +53,6 @@ const executeSQL = (context, verb, entity, payload) => {
         }
         else {
             // Connection succeeded so execute T-SQL stored procedure
-            // if you want to executer ad-hoc T-SQL code, use connection.execSql instead
             connection.callProcedure(request);
         }
     });
@@ -67,36 +70,33 @@ const executeSQL = (context, verb, entity, payload) => {
 
 module.exports = function (context, req) {    
     const method = req.method.toLowerCase();
-    var payload = null;
-    var entity = "";
-
-    switch(method) {
-        case "get":
-            if (req.params.id) {
-                entity = "customer"
-                payload = { "CustomerID": req.params.id };            
-            } else {
-                entity = "customers"                
-            }
-            break;
-        case "patch":
-            entity = "customer"
-            payload = req.body;  
-            if (req.params.id) 
-                payload.CustomerID = req.params.id;
-            break;
-        case "put":
-            entity = "customer"
-            payload = req.body;              
-            break;
-        case "delete":
-            entity = "customer"
-            if (req.params.id) {
-                entity = "customer"
-                payload = { "CustomerID": req.params.id };            
-            }
-            break;       
+    
+    // このハンズオンでは GET メソッドのみをサポート
+    if (method !== "get") {
+        context.res = {
+            status: 405,
+            body: "Method not allowed. This hands-on example only supports GET requests."
+        };
+        context.done();
+        return;
     }
 
-    executeSQL(context, method, entity, payload)
+    // パラメータに ID が指定されている場合
+    if (req.params.id) {
+        const customerId = parseInt(req.params.id);
+        if (isNaN(customerId)) {
+            context.res = {
+                status: 400,
+                body: "Invalid customer ID"
+            };
+            context.done();
+            return;
+        }
+        
+        // 特定の顧客を取得
+        executeSQL(context, 'dbo.GetCustomerById', customerId);
+    } else {
+        // すべての顧客を取得
+        executeSQL(context, 'dbo.GetAllCustomers');
+    }
 }

@@ -3,13 +3,13 @@
 set -euo pipefail
 
 # Make sure these values are correct for your environment
-resourceGroup="dm-api-04"
-appName="dm-api-04"
-storageName="dmapi04"
-location="WestUS2" 
+resourceGroup="rg-hands-on"
+appName="func-hands-on-app"
+storageName="sthandsonstorage"
+location="japaneast"
 
 # Change this if you are using your own github repository
-gitSource="https://github.com/Azure-Samples/azure-sql-db-node-rest-api.git"
+gitSource="https://github.com/ishidahra01/azure-sql-db-node-rest-api-handson.git"
 
 # Check that local.settings.json exists
 settingsFile="./local.settings.json"
@@ -49,10 +49,10 @@ az functionapp create \
     --consumption-plan-location $location \
     --deployment-source-url $gitSource \
     --deployment-source-branch main \
-    --functions-version 2 \
-    --os-type Windows \
+    --functions-version 4 \
+    --os-type Linux \
     --runtime node \
-    --runtime-version 10 \
+    --runtime-version 18 \
 
 echo "Configuring Connection String...";
 settings=(db_server db_database db_user db_password)

@@ -1,37 +1,94 @@
-# Sample REST API usage with cUrl
+# サンプル REST API の使い方
 
-Start local Azure Function host with
+このハンズオンでは、シンプルな GET リクエストのみをサポートしています。
+
+## ローカルで Azure Functions を起動
 
 ```bash
 func start
 ```
 
-if you are using [Azure Functions Core Tools](https://www.npmjs.com/package/azure-functions-core-tools) or using [Visual Studio Code Azure Function extension](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azurefunctions )
+または Visual Studio Code の Azure Functions Extension から F5 でデバッグ実行します。
 
-For more info on other options to run Azure Function locally look here:
+詳細は [Azure Functions をローカルでコーディングしてテストする](https://docs.microsoft.com/ja-jp/azure/azure-functions/functions-develop-local) を参照してください。
 
-[Code and test Azure Functions locally](https://docs.microsoft.com/en-us/azure/azure-functions/functions-develop-local)
-
-## Get a customer
+## 特定の顧客を取得
 
 ```bash
-curl -s -X GET http://localhost:7071/api/customer/123
+curl http://localhost:7071/api/customer/123
 ```
 
-## Create new customer
+レスポンス例:
+
+```json
+[
+    {
+        "CustomerID": 123,
+        "CustomerName": "Tailspin Toys (Roe Park, NY)",
+        "PhoneNumber": "(212) 555-0100",
+        "WebsiteURL": "http://www.tailspintoys.com/RoePark",
+        "AddressLine1": "Shop 219",
+        "AddressLine2": "528 Persson Road",
+        "PostalCode": "90775"
+    }
+]
+```
+
+## すべての顧客を取得
 
 ```bash
-curl -s -X PUT  http://localhost:7071/api/customer --header 'content-type: application/json' --data '{"CustomerName": "John Doe", "PhoneNumber": "123-234-5678", "FaxNumber": "123-234-5678", "WebsiteURL": "http://www.something.com", "Delivery": { "AddressLine1": "One Microsoft Way", "PostalCode": 98052 }}'
+curl http://localhost:7071/api/customer
 ```
 
-## Update customer
+レスポンス例:
+
+```json
+[
+    {
+        "CustomerID": 123,
+        "CustomerName": "Tailspin Toys (Roe Park, NY)",
+        "PhoneNumber": "(212) 555-0100",
+        "WebsiteURL": "http://www.tailspintoys.com/RoePark",
+        "AddressLine1": "Shop 219",
+        "AddressLine2": "528 Persson Road",
+        "PostalCode": "90775"
+    },
+    {
+        "CustomerID": 124,
+        "CustomerName": "Wingtip Toys (Seattle, WA)",
+        "PhoneNumber": "(206) 555-0200",
+        "WebsiteURL": "http://www.wingtiptoys.com",
+        "AddressLine1": "456 Main Street",
+        "AddressLine2": "Suite 100",
+        "PostalCode": "98101"
+    }
+]
+```
+
+## Azure にデプロイした後のテスト
+
+デプロイが完了したら、Function App の URL を使ってテストします:
 
 ```bash
-curl -s -X PATCH http://localhost:7071/customer/1050 --header 'content-type: application/json' --data '{"CustomerName": "Jane Dean", "PhoneNumber": "231-778-5678" }'
+curl https://<your-function-app-name>.azurewebsites.net/api/customer/123
 ```
 
-## Delete a customer
+## トラブルシューティング
 
-```bash
-curl -s -X DELETE http://localhost:7071/customer/1050
-```
+### エラー: "Error connecting to Azure SQL query"
+
+- Azure SQL Server のファイアウォール設定を確認してください
+- ローカルテスト時は、開発端末のIPアドレスを許可する必要があります
+- Azure にデプロイした場合は、Function App の送信IPアドレスを許可する必要があります
+
+### エラー: "AzureWebJobsStorage connection string is invalid"
+
+- Azurite が起動しているか確認してください
+- VS Code の場合: コマンドパレットから "Azurite: Start" を実行
+- ターミナルの場合: `azurite --silent --location /tmp/azurite --debug /tmp/azurite/debug.log`
+
+### エラー: "Could not find stored procedure"
+
+- `sql/HandsOnSetup.sql` を Azure SQL Database で実行したか確認してください
+- Azure Portal の Query Editor または Azure Data Studio から実行できます
+
