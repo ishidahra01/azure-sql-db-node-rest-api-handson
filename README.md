@@ -2,6 +2,18 @@
 
 Functions + Azure SQL REST API / APIM / Front Door までの設計イメージ
 
+**🚀 [クイックスタートガイド](QUICKSTART.md)** | **📘 [Bicep IaC ガイド](BICEP_README.md)** | **📝 [サンプル使用方法](sample-usage.md)**
+
+> **📁 このリポジトリについて**
+>
+> このリポジトリは、Azure Functions と Azure SQL Database を使った REST API のハンズオン教材です。
+> 最小限のコードで「Functions → SQL → JSON レスポンス」の流れを体験できます。
+> 
+> - `customer/`: Azure Functions の HTTP トリガー（GET のみサポート）
+> - `sql/`: Azure SQL Database セットアップスクリプト
+> - `main.bicep`: Infrastructure as Code (IaC) テンプレート
+> - `azure-deploy.sh`: Azure へのデプロイスクリプト
+
 ---
 
 ## 0. このハンズオンの目的
