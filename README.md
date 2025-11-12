@@ -337,6 +337,17 @@ Azure Functions 側では、HTTP リクエストを受け取り、パラメー�
 
 ローカルで動作確認できたら、次は Azure 上にデプロイしてクラウド環境で動作させます。
 
+#### 重要: デプロイの前に
+
+**このハンズオンでは、参加者ごとに異なるリソース名を使用するため、デプロイスクリプト実行時にユニークな識別子の入力が求められます。**
+
+* 識別子として、自分のイニシャルやユーザー名など（小文字の英数字のみ）を準備しておいてください
+* 例: `tanaka`, `suzuki01`, `yamada123` など
+* この識別子は、すべてのAzureリソース名のサフィックス（末尾）として自動的に付与されます
+* これにより、複数の参加者が同時にデプロイしてもリソース名が衝突しません
+
+#### デプロイ手順
+
 1. **Azure CLI でログイン**
 
    ```bash
@@ -346,44 +357,86 @@ Azure Functions 側では、HTTP リクエストを受け取り、パラメー�
 2. **デプロイスクリプトの実行**
 
    このリポジトリには `azure-deploy.sh` というデプロイスクリプトが用意されています。
-   スクリプトを開いて、以下の変数を自分の環境に合わせて編集します：
-
-   ```bash
-   resourceGroup="rg-hands-on"
-   appName="func-hands-on-app"
-   storageName="sthandsonstorage"
-   location="japaneast"
-   ```
-
-   編集後、スクリプトを実行：
+   スクリプトを実行すると、まずユニークな識別子の入力を求められます：
 
    ```bash
    bash azure-deploy.sh
    ```
+
+   実行後、以下のようなプロンプトが表示されます：
+
+   ```text
+   === Azure Function App Deployment Script ===
+
+   To avoid resource name conflicts with other participants,
+   please provide a unique identifier (e.g., your initials or username).
+   This will be used as a suffix for all resource names.
+
+   Enter your unique identifier (lowercase letters and numbers only): 
+   ```
+
+   ここで、自分のユニークな識別子（例: `tanaka`）を入力します。
+
+3. **作成されるリソースの確認**
+
+   識別子を入力すると、作成されるリソースの一覧が表示されます：
+
+   ```text
+   The following resources will be created:
+     Resource Group: rg-hands-on-tanaka
+     Function App: func-handson-tanaka
+     Storage Account: sthandsontanaka
+     Location: eastus
+
+   Continue with deployment? (yes/no):
+   ```
+
+   内容を確認して `yes` と入力すると、デプロイが開始されます。
+
+4. **デプロイの実行内容**
 
    スクリプトは以下を自動で実行します：
    * Resource Group の作成
    * Storage Account の作成
    * Application Insights の作成
    * Function App の作成
-   * Functions コードのデプロイ
+   * **ローカルコードの Function App へのデプロイ** ← GitHubからではなく、ローカルのコードが使用されます
    * アプリケーション設定（DB接続情報）の設定
 
-3. **デプロイされた API をテスト**
+   **重要**: このスクリプトは、GitHubリポジトリからではなく、**ご自身の開発PC上のローカルコード**をAzureにデプロイします。
+   そのため、ローカルで加えた変更がそのままAzure上に反映されます。
+
+5. **デプロイされた API をテスト**
 
    デプロイが完了すると、Function App の URL が表示されます。例：
 
    ```text
-   https://func-hands-on-app.azurewebsites.net
+   ========================================
+   Deployment completed successfully!
+   ========================================
+   Function App Name: func-handson-tanaka
+   Resource Group: rg-hands-on-tanaka
+
+   You can test your API at:
+   https://func-handson-tanaka.azurewebsites.net/api/customer
+
+   To view logs, run:
+     func azure functionapp logstream func-handson-tanaka
    ```
 
    この URL に対して API をテスト：
 
    ```bash
-   curl https://func-hands-on-app.azurewebsites.net/api/customer/123
+   curl https://func-handson-tanaka.azurewebsites.net/api/customer/123
    ```
 
    ローカルと同じ JSON レスポンスが返ってくれば成功です。
+
+#### トラブルシューティング
+
+* **識別子が長すぎる場合**: ストレージアカウント名は24文字以内という制限があるため、識別子を短くしてください
+* **デプロイに失敗した場合**: Azure ポータルでリソースグループを確認し、必要に応じて削除してから再実行してください
+* **SQL接続エラーが発生する場合**: Function App の送信IPアドレスを Azure SQL Database のファイアウォールルールに追加する必要があります（下記の「Azure デプロイ時によくあるエラー」を参照）
 
 ---
 
