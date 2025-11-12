@@ -5,7 +5,10 @@
     "location": {
       "value": "japaneast"
     },
-    "projectName": {
+    "env": {
+      "value": "dev"
+    },
+    "nameSuffix": {
       "value": "handson"
     },
     "sqlAdminUsername": {
@@ -14,8 +17,25 @@
     "sqlAdminPassword": {
       "value": "YOUR_PASSWORD_HERE"
     },
-    "clientIpAddress": {
-      "value": "YOUR_IP_ADDRESS_HERE"
+    "allowedIps": {
+      "value": [
+        "YOUR_IP_ADDRESS_HERE"
+      ]
+    },
+    "apimSkuName": {
+      "value": "Developer"
+    },
+    "apimSkuCapacity": {
+      "value": 1
+    },
+    "apimPublisherEmail": {
+      "value": "admin@example.com"
+    },
+    "apimPublisherName": {
+      "value": "Contoso"
+    },
+    "enablePrivateEndpoints": {
+      "value": false
     }
   }
 }

@@ -82,7 +82,21 @@ az functionapp create \
     --functions-version 4 \
     --os-type Linux \
     --runtime node \
-    --runtime-version 24
+    --runtime-version 22
+
+CONN=$(az storage account show-connection-string -g $resourceGroup -n $storageName -o tsv)
+AI_CONN=$(az resource show -g $resourceGroup -n ${appName}-ai \
+  --resource-type "Microsoft.Insights/components" \
+  --query properties.ConnectionString -o tsv)
+
+echo "Configuring function...";
+
+az functionapp config appsettings set -g $resourceGroup -n $appName --settings \
+  AzureWebJobsStorage="$CONN" \
+  FUNCTIONS_WORKER_RUNTIME="node" \
+  FUNCTIONS_EXTENSION_VERSION="~4" \
+  WEBSITE_RUN_FROM_PACKAGE="1" \
+  APPLICATIONINSIGHTS_CONNECTION_STRING="$AI_CONN"
 
 echo "Configuring Connection String...";
 settings=(db_server db_database db_user db_password)

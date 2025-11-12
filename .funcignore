@@ -6,3 +6,30 @@ local.settings.json
 test
 tsconfig.json
 sql
+
+# Azurite (ローカルストレージエミュレータ)
+__blobstorage__/
+__queuestorage__/
+__azurite_db_blob__.json
+__azurite_db_queue__.json
+__azurite_db_table__.json
+
+# ドキュメント・設定ファイル
+README.md
+QUICKSTART.md
+BICEP_README.md
+CHANGELOG.md
+CONTRIBUTING.md
+LICENSE
+LICENSE.md
+sample-usage.md
+*.md
+
+# IaC・デプロイスクリプト
+main.bicep
+main.parameters.json
+main.parameters.json.template
+azure-deploy.sh
+
+# その他
+.github/
