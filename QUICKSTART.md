@@ -1,6 +1,12 @@
-# クイックスタートガイド
+# 🚀 クイックスタートガイド（パス1）
+
+> **このドキュメントの対象者**: Azure Functions を初めて使う方、とにかく早く動かしたい方  
+> **所要時間**: 約30分  
+> **ゴール**: ローカル Functions から Azure SQL に接続して JSON データを取得
 
 このガイドでは、最短でハンズオンを始めるための手順を説明します。
+
+**より詳しい説明が必要な場合は、[標準ハンズオン（README.md）](README.md)をご覧ください。**
 
 ## 前提条件
 
@@ -116,10 +122,14 @@ curl http://localhost:7071/api/customer/123
 
 ## 次のステップ
 
-- すべての顧客を取得: `curl http://localhost:7071/api/customer`
-- [Azure へのデプロイ](README.md#step-3-azure-へのデプロイオプション)
-- [Bicep での IaC 体験](BICEP_README.md)
-- [詳細なドキュメント](README.md)
+✅ **クイックスタート完了！** ローカル Functions から Azure SQL にアクセスできました。
+
+### さらに学びたい方は...
+
+- **[📘 標準ハンズオン（パス2）](README.md)**: Azure へのデプロイと IaC の基礎を学ぶ
+- **[🏗️ 本番構成への拡張（パス3）](BICEP_README.md)**: Front Door + APIM + Functions の本番構成を構築
+- **[📝 API の使い方](sample-usage.md)**: すべてのエンドポイントと使用例
+- **[💡 ハンズオンTips](ハンズオンTips.md)**: 設計のベストプラクティスと実務の論点
 
 ## トラブルシューティング
 

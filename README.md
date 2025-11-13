@@ -2,7 +2,66 @@
 
 Functions + Azure SQL REST API / APIM / Front Door までの設計イメージ
 
-**🚀 [クイックスタートガイド](QUICKSTART.md)** | **📘 [Bicep IaC ガイド](BICEP_README.md)** | **📝 [サンプル使用方法](sample-usage.md)**
+## 📚 ハンズオンの進め方（3つの学習パス）
+
+このハンズオンは、あなたの目的に応じて**3つの学習パス**を用意しています。目的に合ったパスを選択してください。
+
+### 🚀 パス1: クイックスタート（30分）
+**「とにかく早く動かしたい！」方向け**
+
+最小限の手順で、ローカル環境から Azure SQL に接続する REST API を動かします。
+
+1. **[クイックスタートガイド](QUICKSTART.md)** を開く
+2. 手順に従って Azure SQL Database を作成
+3. ローカルで Functions を起動して API をテスト
+
+✅ このパスを完了すると: ローカル Functions → Azure SQL の接続を確認できます
+
+---
+
+### 📘 パス2: 標準ハンズオン（2-3時間）
+**「Azure PaaS の基本を理解しながら進めたい」方向け**
+
+アーキテクチャの背景や設計思想を理解しながら、ローカル実行と Azure デプロイの両方を体験します。
+
+1. **[このREADME（現在のページ）](#0-このハンズオンの目的)** を読んで目的とゴールを理解
+2. **[ローカル開発環境のセットアップ](LOCAL_SETUP.md)** でツールをインストール
+3. **[Step 0. 事前準備](#step-0-事前準備各参加者が実施すること)** で Azure SQL Database を作成
+4. **[Step 1-2](#step-1-リポジトリの理解)** でローカル実行を確認
+5. **[Step 3](#step-3-azure-へのデプロイオプション)** で Azure にデプロイ
+6. **[Step 4](#step-4-iacinfrastructure-as-code-の体験)** で IaC を体験
+
+✅ このパスを完了すると: Azure Functions アプリの全体像と基本的なデプロイフローを理解できます
+
+---
+
+### 🏗️ パス3: 本番構成への拡張（半日～）
+**「本番レベルのアーキテクチャを構築したい」方向け**
+
+Front Door、APIM、VNet統合など、本番環境を想定した構成を Bicep でデプロイします。
+
+1. **パス2を完了** しておく（基本の理解が必要）
+2. **[Bicep IaC ガイド](BICEP_README.md)** で本番構成をデプロイ
+3. **[ハンズオンTips](ハンズオンTips.md)** で設計のベストプラクティスを学習
+4. **[Section 4. 将来の本番構成への拡張](#4-将来の本番構成への拡張理論編)** で冗長化・閉域化を理解
+
+✅ このパスを完了すると: Front Door → APIM → Functions → SQL という本番構成を実装できます
+
+---
+
+## 📖 ドキュメント一覧と使い方
+
+| ドキュメント | 対象者 | 目的 |
+|------------|--------|------|
+| **[QUICKSTART.md](QUICKSTART.md)** | 初めての方 | 最短でAPIを動かす（パス1） |
+| **[README.md](README.md)** （本ページ） | 全員 | ハンズオンの全体像と標準フロー（パス2） |
+| **[LOCAL_SETUP.md](LOCAL_SETUP.md)** | Windows環境の方 | ローカル開発ツールのインストール手順 |
+| **[BICEP_README.md](BICEP_README.md)** | 本番構成を試したい方 | IaCで本番レベルをデプロイ（パス3） |
+| **[ハンズオンTips.md](ハンズオンTips.md)** | 上級者 | 設計論点とベストプラクティス |
+| **[sample-usage.md](sample-usage.md)** | 全員 | API の使い方とトラブルシューティング |
+| **[sql/README.md](sql/README.md)** | 全員 | SQL スクリプトの説明 |
+
+---
 
 > **📁 このリポジトリについて**
 >
@@ -12,7 +71,8 @@ Functions + Azure SQL REST API / APIM / Front Door までの設計イメージ
 > - `customer/`: Azure Functions の HTTP トリガー（GET のみサポート）
 > - `sql/`: Azure SQL Database セットアップスクリプト
 > - `main.bicep`: Infrastructure as Code (IaC) テンプレート
-> - `azure-deploy.sh`: Azure へのデプロイスクリプト
+> - `azure-deploy.sh`: 簡易デプロイスクリプト（パス2で使用）
+> - `deploy-function-code.sh`: Bicep デプロイ後のコードデプロイスクリプト（パス3で使用）
 
 ---
 
