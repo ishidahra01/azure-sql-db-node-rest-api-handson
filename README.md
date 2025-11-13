@@ -74,8 +74,8 @@ Front Door、APIM、VNet統合など、本番環境を想定した構成を Bice
 > - `customer/`: Azure Functions の HTTP トリガー（GET のみサポート）
 > - `sql/`: Azure SQL Database セットアップスクリプト
 > - `main.bicep`: Infrastructure as Code (IaC) テンプレート
-> - `azure-deploy.sh`: 簡易デプロイスクリプト（パス2で使用）
-> - `deploy-function-code.sh`: Bicep デプロイ後のコードデプロイスクリプト（パス3で使用）
+> - `azure-deploy.sh` / `azure-deploy.ps1`: 簡易デプロイスクリプト（パス2で使用、Bash/PowerShell）
+> - `deploy-function-code.sh` / `deploy-function-code.ps1`: Bicep デプロイ後のコードデプロイスクリプト（パス3で使用、Bash/PowerShell）
 
 ---
 
@@ -292,8 +292,9 @@ Azure SQL Database は作成直後は外部からの接続が拒否されてお�
   * ローカル実行時の設定テンプレート
   * DB接続情報や `AzureWebJobsStorage` の値をここで指定
 
-* **`azure-deploy.sh`**
+* **`azure-deploy.sh` / `azure-deploy.ps1`**
   * Azure CLI を使ってリソースグループ作成～Function Appデプロイまで行うスクリプト
+  * Bash版（`.sh`）とPowerShell版（`.ps1`）があります
 
 * **`host.json`** / **`package.json`**
   * Node.js の依存関係と Function のエントリポイント
@@ -419,11 +420,18 @@ Azure Functions 側では、HTTP リクエストを受け取り、パラメー�
 
 2. **デプロイスクリプトの実行**
 
-   このリポジトリには `azure-deploy.sh` というデプロイスクリプトが用意されています。
+   このリポジトリには `azure-deploy.sh`（Bash用）と `azure-deploy.ps1`（PowerShell用）というデプロイスクリプトが用意されています。
+   お使いの環境に応じて、いずれかのスクリプトを実行してください。
    スクリプトを実行すると、まずユニークな識別子の入力を求められます：
 
+   **Bash（Linux/macOS/WSL）の場合:**
    ```bash
    bash azure-deploy.sh
+   ```
+
+   **PowerShell（Windows）の場合:**
+   ```powershell
+   .\azure-deploy.ps1
    ```
 
    実行後、以下のようなプロンプトが表示されます：
