@@ -2,6 +2,8 @@
 
 Functions + Azure SQL REST API / APIM / Front Door までの設計イメージ
 
+> **📍 迷った時は**: **[ナビゲーションガイド](NAVIGATION.md)** で自分に合ったパスを確認できます
+
 ## 📚 ハンズオンの進め方（3つの学習パス）
 
 このハンズオンは、あなたの目的に応じて**3つの学習パス**を用意しています。目的に合ったパスを選択してください。
@@ -53,6 +55,7 @@ Front Door、APIM、VNet統合など、本番環境を想定した構成を Bice
 
 | ドキュメント | 対象者 | 目的 |
 |------------|--------|------|
+| **[NAVIGATION.md](NAVIGATION.md)** | 全員 | ドキュメントマップと迷った時のガイド |
 | **[QUICKSTART.md](QUICKSTART.md)** | 初めての方 | 最短でAPIを動かす（パス1） |
 | **[README.md](README.md)** （本ページ） | 全員 | ハンズオンの全体像と標準フロー（パス2） |
 | **[LOCAL_SETUP.md](LOCAL_SETUP.md)** | Windows環境の方 | ローカル開発ツールのインストール手順 |
