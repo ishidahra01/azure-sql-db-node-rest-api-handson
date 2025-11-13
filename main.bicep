@@ -51,9 +51,9 @@ var sqlServerName = 'sql-${nameSuffix}-${env}-${take(uniqueId, 6)}'
 var sqlDatabaseName = 'sqldb-${nameSuffix}-${env}'
 var apimName = 'apim-${nameSuffix}-${env}'
 var frontDoorName = 'afd-${nameSuffix}-${env}'
-var wafPolicyName = 'waf-${nameSuffix}-${env}'
+// var wafPolicyName = 'waf-${nameSuffix}-${env}' // WAF は一旦コメントアウト
 
-// ストレージアカウント（Functions 用）
+// ストレージアカウント(Functions 用)
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   name: storageAccountName
   location: location
@@ -123,7 +123,7 @@ resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
         }
         {
           name: 'WEBSITE_NODE_DEFAULT_VERSION'
-          value: '~18'
+          value: '~22'
         }
         {
           name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
@@ -146,7 +146,7 @@ resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
           value: sqlAdminPassword
         }
       ]
-      linuxFxVersion: 'node|18'
+    //   linuxFxVersion: 'node|22'
     }
     httpsOnly: true
   }
@@ -191,15 +191,15 @@ resource sqlDatabase 'Microsoft.Sql/servers/databases@2022-05-01-preview' = {
   }
 }
 
-// Virtual Network Rule: Azure 内のリソースからのアクセスを許可
-resource sqlVirtualNetworkRule 'Microsoft.Sql/servers/virtualNetworkRules@2022-05-01-preview' = {
-  parent: sqlServer
-  name: 'AllowAzureServices'
-  properties: {
-    virtualNetworkSubnetId: '/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.Network/virtualNetworks/default/subnets/default'
-    ignoreMissingVnetServiceEndpoint: true
-  }
-}
+// Virtual Network Rule: ハンズオン用途のため削除
+// resource sqlVirtualNetworkRule 'Microsoft.Sql/servers/virtualNetworkRules@2022-05-01-preview' = {
+//   parent: sqlServer
+//   name: 'AllowAzureServices'
+//   properties: {
+//     virtualNetworkSubnetId: '/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.Network/virtualNetworks/default/subnets/default'
+//     ignoreMissingVnetServiceEndpoint: true
+//   }
+// }
 
 // ファイアウォールルール: Azure サービスを許可
 resource sqlFirewallRuleAzure 'Microsoft.Sql/servers/firewallRules@2022-05-01-preview' = {
@@ -278,11 +278,11 @@ resource apimOperationPolicy 'Microsoft.ApiManagement/service/apis/operations/po
   name: 'policy'
   properties: {
     format: 'rawxml'
-    value: '''
+    value: format('''
 <policies>
   <inbound>
     <base />
-    <set-backend-service base-url="https://${functionApp.properties.defaultHostName}" />
+    <set-backend-service base-url="https://{0}.azurewebsites.net/api" />
   </inbound>
   <backend>
     <base />
@@ -294,36 +294,38 @@ resource apimOperationPolicy 'Microsoft.ApiManagement/service/apis/operations/po
     <base />
   </on-error>
 </policies>
-'''
+''', functionAppName)
   }
 }
 
+
 // WAF Policy for Front Door
-resource wafPolicy 'Microsoft.Network/FrontDoorWebApplicationFirewallPolicies@2022-05-01' = {
-  name: wafPolicyName
-  location: 'Global'
-  sku: {
-    name: 'Premium_AzureFrontDoor'
-  }
-  properties: {
-    policySettings: {
-      enabledState: 'Enabled'
-      mode: 'Prevention'
-    }
-    managedRules: {
-      managedRuleSets: [
-        {
-          ruleSetType: 'Microsoft_DefaultRuleSet'
-          ruleSetVersion: '2.1'
-        }
-        {
-          ruleSetType: 'Microsoft_BotManagerRuleSet'
-          ruleSetVersion: '1.0'
-        }
-      ]
-    }
-  }
-}
+// TODO: ハンズオン用途のため一旦コメントアウト（将来的に Microsoft.Cdn/... 系のリソースで実装）
+// resource wafPolicy 'Microsoft.Network/FrontDoorWebApplicationFirewallPolicies@2022-05-01' = {
+//   name: wafPolicyName
+//   location: 'Global'
+//   sku: {
+//     name: 'Premium_AzureFrontDoor'
+//   }
+//   properties: {
+//     policySettings: {
+//       enabledState: 'Enabled'
+//       mode: 'Prevention'
+//     }
+//     managedRules: {
+//       managedRuleSets: [
+//         {
+//           ruleSetType: 'Microsoft_DefaultRuleSet'
+//           ruleSetVersion: '2.1'
+//         }
+//         {
+//           ruleSetType: 'Microsoft_BotManagerRuleSet'
+//           ruleSetVersion: '1.0'
+//         }
+//       ]
+//     }
+//   }
+// }
 
 // Azure Front Door Profile
 resource frontDoorProfile 'Microsoft.Cdn/profiles@2023-05-01' = {
@@ -405,30 +407,31 @@ resource frontDoorRoute 'Microsoft.Cdn/profiles/afdEndpoints/routes@2023-05-01' 
 }
 
 // Security Policy (WAF)
-resource frontDoorSecurityPolicy 'Microsoft.Cdn/profiles/securityPolicies@2023-05-01' = {
-  parent: frontDoorProfile
-  name: 'security-policy'
-  properties: {
-    parameters: {
-      type: 'WebApplicationFirewall'
-      wafPolicy: {
-        id: wafPolicy.id
-      }
-      associations: [
-        {
-          domains: [
-            {
-              id: frontDoorEndpoint.id
-            }
-          ]
-          patternsToMatch: [
-            '/*'
-          ]
-        }
-      ]
-    }
-  }
-}
+// TODO: ハンズオン用途のため一旦コメントアウト（将来的に実装）
+// resource frontDoorSecurityPolicy 'Microsoft.Cdn/profiles/securityPolicies@2023-05-01' = {
+//   parent: frontDoorProfile
+//   name: 'security-policy'
+//   properties: {
+//     parameters: {
+//       type: 'WebApplicationFirewall'
+//       wafPolicy: {
+//         id: wafPolicy.id
+//       }
+//       associations: [
+//         {
+//           domains: [
+//             {
+//               id: frontDoorEndpoint.id
+//             }
+//           ]
+//           patternsToMatch: [
+//             '/*'
+//           ]
+//         }
+//       ]
+//     }
+//   }
+// }
 
 
 // 出力
