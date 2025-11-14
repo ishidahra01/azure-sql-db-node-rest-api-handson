@@ -31,12 +31,12 @@
 │       ├─ LOCAL_SETUP.md（開発環境準備）
 │       ├─ sql/README.md（SQLスクリプト）
 │       ├─ sample-usage.md（APIテスト）
-│       └─ azure-deploy.sh（簡易デプロイ）
+│       └─ azure-deploy.sh / azure-deploy.ps1（簡易デプロイ、Bash/PowerShell）
 │
 └─ 🏗️ パス3: 本番構成への拡張
     └─ BICEP_README.md ←【ここから開始】
         ├─ main.bicep（IaCテンプレート）
-        ├─ deploy-function-code.sh（コードデプロイ）
+        ├─ deploy-function-code.sh / deploy-function-code.ps1（コードデプロイ、Bash/PowerShell）
         ├─ ハンズオンTips.md（設計論点）
         └─ README.md Section 4（冗長化・閉域化）
 ```
@@ -79,7 +79,7 @@
 → [ハンズオンTips.md](ハンズオンTips.md)
 
 ### 「Azure にデプロイしたい」
-- **簡易デプロイ**: [README.md Step 3](README.md#step-3-azure-へのデプロイオプション) + `azure-deploy.sh`
+- **簡易デプロイ**: [README.md Step 3](README.md#step-3-azure-へのデプロイオプション) + `azure-deploy.sh` / `azure-deploy.ps1`
 - **本番構成**: [BICEP_README.md](BICEP_README.md) + `main.bicep`
 
 ---
