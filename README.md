@@ -69,11 +69,13 @@ Azure Firewall、Application Gateway、Private Endpoint を組み合わせた、
 | ドキュメント | 対象者 | 目的 |
 |------------|--------|------|
 | **[NAVIGATION.md](NAVIGATION.md)** | 全員 | ドキュメントマップと迷った時のガイド |
+| **[COMPARISON.md](COMPARISON.md)** | 全員 | 4つのパスの詳細比較と選択ガイド |
 | **[QUICKSTART.md](QUICKSTART.md)** | 初めての方 | 最短でAPIを動かす（パス1） |
 | **[README.md](README.md)** （本ページ） | 全員 | ハンズオンの全体像と標準フロー（パス2） |
 | **[LOCAL_SETUP.md](LOCAL_SETUP.md)** | Windows環境の方 | ローカル開発ツールのインストール手順 |
 | **[BICEP_README.md](BICEP_README.md)** | 本番構成を試したい方 | IaCで本番レベルをデプロイ（パス3） |
 | **[ENTERPRISE_DEPLOYMENT.md](ENTERPRISE_DEPLOYMENT.md)** | エンタープライズ構成を試したい方 | 本格的なセキュア構成のデプロイ（パス4） |
+| **[ARCHITECTURE.md](ARCHITECTURE.md)** | 技術者 | アーキテクチャの詳細と設計思想 |
 | **[ハンズオンTips.md](ハンズオンTips.md)** | 上級者 | 設計論点とベストプラクティス |
 | **[sample-usage.md](sample-usage.md)** | 全員 | API の使い方とトラブルシューティング |
 | **[sql/README.md](sql/README.md)** | 全員 | SQL スクリプトの説明 |
