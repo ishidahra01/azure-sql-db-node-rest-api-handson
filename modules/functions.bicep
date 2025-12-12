@@ -35,7 +35,6 @@ param appInsightsInstrumentationKey string
 param storageAccountConnectionString string
 
 // 変数
-var uniqueId = uniqueString(resourceGroup().id)
 var functionAppName = 'func-${projectName}-${env}'
 var appServicePlanName = 'asp-${projectName}-${env}'
 var privateEndpointName = 'pe-func-${projectName}-${env}'

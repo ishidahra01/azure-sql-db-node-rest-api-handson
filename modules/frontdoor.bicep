@@ -8,9 +8,6 @@ param projectName string
 @description('Application Gateway のパブリック IP アドレス')
 param appGwPublicIp string
 
-@description('Application Gateway の ID')
-param appGwId string
-
 // 変数
 var frontDoorName = 'afd-${projectName}-${env}'
 var endpointName = 'ep-${projectName}-${env}'

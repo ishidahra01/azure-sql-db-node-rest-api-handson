@@ -77,9 +77,6 @@ module firewall 'modules/firewall.bicep' = {
     projectName: projectName
     firewallSubnetId: network.outputs.firewallSubnetId
   }
-  dependsOn: [
-    network
-  ]
 }
 
 // Application Gateway モジュール
@@ -92,10 +89,6 @@ module appGw 'modules/appgw.bicep' = {
     appGwSubnetId: network.outputs.appGwSubnetId
     backendIpAddress: firewall.outputs.firewallPrivateIp
   }
-  dependsOn: [
-    network
-    firewall
-  ]
 }
 
 // SQL Database モジュール
@@ -109,9 +102,6 @@ module sqldb 'modules/sqldb.bicep' = {
     sqlAdminUsername: sqlAdminUsername
     sqlAdminPassword: sqlAdminPassword
   }
-  dependsOn: [
-    network
-  ]
 }
 
 // Functions モジュール
@@ -130,12 +120,6 @@ module functions 'modules/functions.bicep' = {
     appInsightsInstrumentationKey: applicationInsights.properties.InstrumentationKey
     storageAccountConnectionString: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
   }
-  dependsOn: [
-    network
-    sqldb
-    storageAccount
-    applicationInsights
-  ]
 }
 
 // API Management モジュール
@@ -150,10 +134,6 @@ module apim 'modules/apim.bicep' = {
     apimPublisherName: apimPublisherName
     functionAppHostName: functions.outputs.functionAppHostName
   }
-  dependsOn: [
-    network
-    functions
-  ]
 }
 
 // Azure Front Door モジュール
@@ -163,11 +143,7 @@ module frontDoor 'modules/frontdoor.bicep' = {
     env: env
     projectName: projectName
     appGwPublicIp: appGw.outputs.appGwPublicIp
-    appGwId: appGw.outputs.appGwId
   }
-  dependsOn: [
-    appGw
-  ]
 }
 
 // 出力
