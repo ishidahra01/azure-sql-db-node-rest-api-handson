@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.39.26.7824",
-      "templateHash": "11597749576517635065"
+      "templateHash": "834555250992288889"
     }
   },
   "parameters": {
@@ -55,6 +55,20 @@
       "defaultValue": "Contoso",
       "metadata": {
         "description": "API Management の組織名"
+      }
+    },
+    "tlsCertificateData": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Application Gateway の TLS 証明書データ (Base64エンコード) - オプション"
+      }
+    },
+    "tlsCertificatePassword": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Application Gateway の TLS 証明書パスワード - オプション"
       }
     }
   },
@@ -639,6 +653,12 @@
           },
           "backendIpAddress": {
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'firewallDeployment'), '2025-04-01').outputs.firewallPrivateIp.value]"
+          },
+          "tlsCertificateData": {
+            "value": "[parameters('tlsCertificateData')]"
+          },
+          "tlsCertificatePassword": {
+            "value": "[parameters('tlsCertificatePassword')]"
           }
         },
         "template": {
@@ -648,7 +668,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.39.26.7824",
-              "templateHash": "8714088069074056823"
+              "templateHash": "4615037642607873825"
             }
           },
           "parameters": {
@@ -681,11 +701,27 @@
               "metadata": {
                 "description": "バックエンド (Firewall) のプライベート IP"
               }
+            },
+            "tlsCertificateData": {
+              "type": "securestring",
+              "defaultValue": "",
+              "metadata": {
+                "description": "TLS 証明書データ (Base64エンコード) - オプション"
+              }
+            },
+            "tlsCertificatePassword": {
+              "type": "securestring",
+              "defaultValue": "",
+              "metadata": {
+                "description": "TLS 証明書パスワード - オプション"
+              }
             }
           },
           "variables": {
             "appGwName": "[format('appgw-{0}-{1}', parameters('projectName'), parameters('env'))]",
-            "publicIpName": "[format('pip-appgw-{0}-{1}', parameters('projectName'), parameters('env'))]"
+            "publicIpName": "[format('pip-appgw-{0}-{1}', parameters('projectName'), parameters('env'))]",
+            "privateLinkConfigName": "appgw-pl-config",
+            "hasCertificate": "[not(empty(parameters('tlsCertificateData')))]"
           },
           "resources": [
             {
@@ -730,6 +766,15 @@
                         "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))]"
                       }
                     }
+                  },
+                  {
+                    "name": "appGwPrivateFrontendIp",
+                    "properties": {
+                      "privateIPAllocationMethod": "Dynamic",
+                      "subnet": {
+                        "id": "[parameters('appGwSubnetId')]"
+                      }
+                    }
                   }
                 ],
                 "frontendPorts": [
@@ -746,6 +791,7 @@
                     }
                   }
                 ],
+                "sslCertificates": "[if(variables('hasCertificate'), createArray(createObject('name', 'appgw-ssl-cert', 'properties', createObject('data', parameters('tlsCertificateData'), 'password', parameters('tlsCertificatePassword')))), createArray())]",
                 "backendAddressPools": [
                   {
                     "name": "firewallBackendPool",
@@ -770,35 +816,23 @@
                     }
                   }
                 ],
-                "httpListeners": [
+                "httpListeners": "[if(variables('hasCertificate'), createArray(createObject('name', 'httpsListener', 'properties', createObject('frontendIPConfiguration', createObject('id', resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', variables('appGwName'), 'appGwPrivateFrontendIp')), 'frontendPort', createObject('id', resourceId('Microsoft.Network/applicationGateways/frontendPorts', variables('appGwName'), 'port_443')), 'protocol', 'Https', 'sslCertificate', createObject('id', resourceId('Microsoft.Network/applicationGateways/sslCertificates', variables('appGwName'), 'appgw-ssl-cert')))), createObject('name', 'httpListener', 'properties', createObject('frontendIPConfiguration', createObject('id', resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', variables('appGwName'), 'appGwPublicFrontendIp')), 'frontendPort', createObject('id', resourceId('Microsoft.Network/applicationGateways/frontendPorts', variables('appGwName'), 'port_80')), 'protocol', 'Http'))), createArray(createObject('name', 'httpListener', 'properties', createObject('frontendIPConfiguration', createObject('id', resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', variables('appGwName'), 'appGwPrivateFrontendIp')), 'frontendPort', createObject('id', resourceId('Microsoft.Network/applicationGateways/frontendPorts', variables('appGwName'), 'port_80')), 'protocol', 'Http'))))]",
+                "requestRoutingRules": "[if(variables('hasCertificate'), createArray(createObject('name', 'httpsRoutingRule', 'properties', createObject('ruleType', 'Basic', 'priority', 100, 'httpListener', createObject('id', resourceId('Microsoft.Network/applicationGateways/httpListeners', variables('appGwName'), 'httpsListener')), 'backendAddressPool', createObject('id', resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('appGwName'), 'firewallBackendPool')), 'backendHttpSettings', createObject('id', resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', variables('appGwName'), 'httpSettings')))), createObject('name', 'httpRoutingRule', 'properties', createObject('ruleType', 'Basic', 'priority', 110, 'httpListener', createObject('id', resourceId('Microsoft.Network/applicationGateways/httpListeners', variables('appGwName'), 'httpListener')), 'backendAddressPool', createObject('id', resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('appGwName'), 'firewallBackendPool')), 'backendHttpSettings', createObject('id', resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', variables('appGwName'), 'httpSettings'))))), createArray(createObject('name', 'routingRule', 'properties', createObject('ruleType', 'Basic', 'priority', 100, 'httpListener', createObject('id', resourceId('Microsoft.Network/applicationGateways/httpListeners', variables('appGwName'), 'httpListener')), 'backendAddressPool', createObject('id', resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('appGwName'), 'firewallBackendPool')), 'backendHttpSettings', createObject('id', resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', variables('appGwName'), 'httpSettings'))))))]",
+                "privateLinkConfigurations": [
                   {
-                    "name": "httpListener",
+                    "name": "[variables('privateLinkConfigName')]",
                     "properties": {
-                      "frontendIPConfiguration": {
-                        "id": "[resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', variables('appGwName'), 'appGwPublicFrontendIp')]"
-                      },
-                      "frontendPort": {
-                        "id": "[resourceId('Microsoft.Network/applicationGateways/frontendPorts', variables('appGwName'), 'port_80')]"
-                      },
-                      "protocol": "Http"
-                    }
-                  }
-                ],
-                "requestRoutingRules": [
-                  {
-                    "name": "routingRule",
-                    "properties": {
-                      "ruleType": "Basic",
-                      "priority": 100,
-                      "httpListener": {
-                        "id": "[resourceId('Microsoft.Network/applicationGateways/httpListeners', variables('appGwName'), 'httpListener')]"
-                      },
-                      "backendAddressPool": {
-                        "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('appGwName'), 'firewallBackendPool')]"
-                      },
-                      "backendHttpSettings": {
-                        "id": "[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', variables('appGwName'), 'httpSettings')]"
-                      }
+                      "ipConfigurations": [
+                        {
+                          "name": "privateLinkIpConfig",
+                          "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                              "id": "[parameters('appGwSubnetId')]"
+                            }
+                          }
+                        }
+                      ]
                     }
                   }
                 ],
@@ -826,6 +860,14 @@
             "appGwPublicIp": {
               "type": "string",
               "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName')), '2023-05-01').ipAddress]"
+            },
+            "appGwPrivateIp": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Network/applicationGateways', variables('appGwName')), '2023-05-01').frontendIPConfigurations[1].properties.privateIPAddress]"
+            },
+            "privateLinkConfigurationId": {
+              "type": "string",
+              "value": "[format('{0}/privateLinkConfigurations/{1}', resourceId('Microsoft.Network/applicationGateways', variables('appGwName')), variables('privateLinkConfigName'))]"
             }
           }
         }
@@ -1532,8 +1574,14 @@
           "projectName": {
             "value": "[parameters('projectName')]"
           },
-          "appGwPublicIp": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'appGwDeployment'), '2025-04-01').outputs.appGwPublicIp.value]"
+          "appGwResourceId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'appGwDeployment'), '2025-04-01').outputs.appGwId.value]"
+          },
+          "appGwPrivateLinkConfigId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'appGwDeployment'), '2025-04-01').outputs.privateLinkConfigurationId.value]"
+          },
+          "appGwPrivateIp": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'appGwDeployment'), '2025-04-01').outputs.appGwPrivateIp.value]"
           }
         },
         "template": {
@@ -1543,7 +1591,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.39.26.7824",
-              "templateHash": "16946540636994589369"
+              "templateHash": "12243062579336825138"
             }
           },
           "parameters": {
@@ -1559,10 +1607,22 @@
                 "description": "プロジェクト名"
               }
             },
-            "appGwPublicIp": {
+            "appGwResourceId": {
               "type": "string",
               "metadata": {
-                "description": "Application Gateway のパブリック IP アドレス"
+                "description": "Application Gateway のリソース ID"
+              }
+            },
+            "appGwPrivateLinkConfigId": {
+              "type": "string",
+              "metadata": {
+                "description": "Application Gateway の Private Link 構成 ID"
+              }
+            },
+            "appGwPrivateIp": {
+              "type": "string",
+              "metadata": {
+                "description": "Application Gateway のプライベート IP アドレス"
               }
             }
           },
@@ -1621,13 +1681,21 @@
               "apiVersion": "2023-05-01",
               "name": "[format('{0}/{1}/{2}', variables('frontDoorName'), 'appgw-origin-group', 'appgw-origin')]",
               "properties": {
-                "hostName": "[parameters('appGwPublicIp')]",
+                "hostName": "[parameters('appGwPrivateIp')]",
                 "httpPort": 80,
                 "httpsPort": 443,
-                "originHostHeader": "[parameters('appGwPublicIp')]",
+                "originHostHeader": "[parameters('appGwPrivateIp')]",
                 "priority": 1,
                 "weight": 1000,
-                "enabledState": "Enabled"
+                "enabledState": "Enabled",
+                "sharedPrivateLinkResource": {
+                  "privateLink": {
+                    "id": "[parameters('appGwResourceId')]"
+                  },
+                  "privateLinkLocation": "[resourceGroup().location]",
+                  "groupId": "[parameters('appGwPrivateLinkConfigId')]",
+                  "requestMessage": "Front Door Private Link request"
+                }
               },
               "dependsOn": [
                 "[resourceId('Microsoft.Cdn/profiles/originGroups', variables('frontDoorName'), 'appgw-origin-group')]"
@@ -1650,7 +1718,7 @@
                 ],
                 "forwardingProtocol": "HttpOnly",
                 "linkToDefaultDomain": "Enabled",
-                "httpsRedirect": "Disabled"
+                "httpsRedirect": "Enabled"
               },
               "dependsOn": [
                 "[resourceId('Microsoft.Cdn/profiles/afdEndpoints', variables('frontDoorName'), variables('endpointName'))]",
@@ -1739,7 +1807,7 @@
     },
     "deploymentInstructions": {
       "type": "string",
-      "value": "デプロイが完了しました！\n\n次のステップ:\n1. SQL スクリプトの実行:\n   - Azure Portal で SQL Database を開く\n   - Query Editor を使用して sql/HandsOnSetup.sql を実行\n\n2. Function App へのコードデプロイ:\n   func azure functionapp publish ${functions.outputs.functionAppName}\n\n3. 動作確認:\n   - Front Door 経由: ${frontDoor.outputs.frontDoorEndpointUrl}/api/customer/123\n   - Application Gateway 経由: http://${appGw.outputs.appGwPublicIp}/api/customer/123\n\n注意: API Management と Front Door のプロビジョニングには 30〜60 分かかります。\n"
+      "value": "デプロイが完了しました！\n\n次のステップ:\n1. Front Door Private Link の承認:\n   - Azure Portal で Application Gateway を開く\n   - Settings → Private Link を選択\n   - Front Door からの接続要求を承認\n\n2. SQL スクリプトの実行:\n   - Azure Portal で SQL Database を開く\n   - Query Editor を使用して sql/HandsOnSetup.sql を実行\n\n3. Function App へのコードデプロイ:\n   func azure functionapp publish ${functions.outputs.functionAppName}\n\n4. 動作確認:\n   - Front Door 経由 (推奨): ${frontDoor.outputs.frontDoorEndpointUrl}/api/customer/123\n   - Application Gateway 経由 (Public IP): http://${appGw.outputs.appGwPublicIp}/api/customer/123\n\n注意: \n- API Management と Front Door のプロビジョニングには 30〜60 分かかります\n- Private Link 接続の承認後、Front Door → AppGW の接続が確立されます\n- TLS 証明書を設定していない場合、AppGW は HTTP で動作します\n"
     }
   }
 }

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.39.26.7824",
-      "templateHash": "16946540636994589369"
+      "templateHash": "12243062579336825138"
     }
   },
   "parameters": {
@@ -21,10 +21,22 @@
         "description": "プロジェクト名"
       }
     },
-    "appGwPublicIp": {
+    "appGwResourceId": {
       "type": "string",
       "metadata": {
-        "description": "Application Gateway のパブリック IP アドレス"
+        "description": "Application Gateway のリソース ID"
+      }
+    },
+    "appGwPrivateLinkConfigId": {
+      "type": "string",
+      "metadata": {
+        "description": "Application Gateway の Private Link 構成 ID"
+      }
+    },
+    "appGwPrivateIp": {
+      "type": "string",
+      "metadata": {
+        "description": "Application Gateway のプライベート IP アドレス"
       }
     }
   },
@@ -83,13 +95,21 @@
       "apiVersion": "2023-05-01",
       "name": "[format('{0}/{1}/{2}', variables('frontDoorName'), 'appgw-origin-group', 'appgw-origin')]",
       "properties": {
-        "hostName": "[parameters('appGwPublicIp')]",
+        "hostName": "[parameters('appGwPrivateIp')]",
         "httpPort": 80,
         "httpsPort": 443,
-        "originHostHeader": "[parameters('appGwPublicIp')]",
+        "originHostHeader": "[parameters('appGwPrivateIp')]",
         "priority": 1,
         "weight": 1000,
-        "enabledState": "Enabled"
+        "enabledState": "Enabled",
+        "sharedPrivateLinkResource": {
+          "privateLink": {
+            "id": "[parameters('appGwResourceId')]"
+          },
+          "privateLinkLocation": "[resourceGroup().location]",
+          "groupId": "[parameters('appGwPrivateLinkConfigId')]",
+          "requestMessage": "Front Door Private Link request"
+        }
       },
       "dependsOn": [
         "[resourceId('Microsoft.Cdn/profiles/originGroups', variables('frontDoorName'), 'appgw-origin-group')]"
@@ -112,7 +132,7 @@
         ],
         "forwardingProtocol": "HttpOnly",
         "linkToDefaultDomain": "Enabled",
-        "httpsRedirect": "Disabled"
+        "httpsRedirect": "Enabled"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Cdn/profiles/afdEndpoints', variables('frontDoorName'), variables('endpointName'))]",

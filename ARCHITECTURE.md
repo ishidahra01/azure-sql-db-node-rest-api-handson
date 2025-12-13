@@ -99,14 +99,16 @@
 
 ```
 [Internet]
-    ↓ HTTPS
+    ↓ HTTPS (Azure Front Door 既定ドメイン)
 [Azure Front Door Premium]
     - WAF, DDoS保護, Premium機能
-    ↓ Private Link (将来対応) / Public IP
+    ↓ Private Link 接続 (Front Door Premium 必須)
 [Application Gateway WAF v2]
+    - Private frontend IP: 実際の着地点
+    - Public frontend IP: 仕様上の存在要件（基本未使用）
+    - TLS 終端 (証明書管理)
     - WAF OWASP 3.2
-    - リージョナルロードバランサー
-    ↓ HTTP (VNet内部)
+    ↓ HTTP (VNet内部、証明書運用の簡素化)
 [Azure Firewall Premium]
     - IDPS有効
     - 侵入検知・防止
@@ -118,7 +120,7 @@
 [Azure Functions Premium (VNet統合)]
     - ElasticPremium EP1
     - パブリックアクセス無効
-    ↓ TLS 1.2+ (Private Endpoint)
+    ↓ TDS + TLS (必須、Private Endpoint)
 [Azure SQL Database (Private Endpoint)]
     - パブリックアクセス完全無効
     - Private IP のみ
@@ -201,12 +203,12 @@ VNet: 10.0.0.0/16
 ### トラフィックフロー
 
 **インバウンド（リクエスト）**:
-1. Internet → Front Door (HTTPS, グローバルエッジ)
-2. Front Door → Application Gateway (HTTP over Private Link/Public IP)
-3. Application Gateway → Azure Firewall (HTTP, 10.0.2.x)
+1. Internet → Front Door (HTTPS, グローバルエッジ、Azure Front Door 既定ドメイン)
+2. Front Door → Application Gateway (HTTP over Private Link、Front Door Premium 必須)
+3. Application Gateway (TLS 終端) → Azure Firewall (HTTP, 10.0.2.x)
 4. Azure Firewall → API Management (HTTP, 10.0.3.x)
 5. API Management → Functions Private Endpoint (HTTPS, 10.0.5.x)
-6. Functions → SQL Private Endpoint (TLS, 10.0.5.y)
+6. Functions → SQL Private Endpoint (TDS + TLS 必須, 10.0.5.y)
 
 **アウトバウンド（レスポンス）**:
 - 同じ経路を逆方向
@@ -235,6 +237,56 @@ VNet: 10.0.0.0/16
 
 ---
 
+## 🔐 Private Link アーキテクチャの詳細
+
+### Front Door → Application Gateway の Private Link 接続
+
+**重要な設計ポイント**:
+
+1. **Front Door Premium が必須**
+   - Private Link Origin は Front Door Premium SKU でのみサポート
+   - Standard SKU では Public IP 接続のみ
+
+2. **Application Gateway の構成要件**
+   - **Private + Public 両方のフロントエンド IP が必要**
+   - Private IP: Front Door からの実際の着地点
+   - Public IP: Private Link 機能のための仕様上の存在要件（実運用では未使用）
+   - Private IP のみの構成では Private Link をサポートしない
+
+3. **Private Link の承認フロー**
+   - Front Door が Application Gateway に対して Private Link 接続要求を送信
+   - Application Gateway 側で接続要求を承認する必要がある
+   - 承認後、Private Link トンネルが確立される
+
+4. **Private Endpoint との違い**
+   - Private Endpoint は「あなたの VNet に作成する」もの
+   - Private Link は「サービス側（Front Door）で保持される」もの
+   - Application Gateway 側では Private Link 構成を作成して接続を受け入れる
+
+### 証明書と TLS 終端の戦略
+
+**TLS 終端ポイント**: Application Gateway
+
+**証明書の配置**:
+```
+[Internet] --HTTPS (Front Door 既定証明書)--> [Front Door Premium]
+           --HTTP (Private Link トンネル内)--> [Application Gateway]
+           --HTTP (VNet 内部)--> [以降のコンポーネント]
+```
+
+**証明書管理の方針**:
+- **Front Door**: Azure Front Door 既定ドメインを使用（証明書管理不要）
+- **Application Gateway**: TLS 終端のため証明書必須
+  - App Service Certificate を使用（推奨）
+  - Key Vault 経由で証明書を管理
+  - 証明書の自動更新が可能
+
+**証明書のデプロイ方法**:
+1. App Service Certificate を作成（Azure Portal または Bicep）
+2. Key Vault にエクスポート
+3. Application Gateway に証明書をインポート
+4. HTTPS リスナーに証明書を関連付け
+
 ## 🔄 通信プロトコルの選択理由
 
 ### なぜ Application Gateway 以降を HTTP にするのか？
@@ -252,6 +304,11 @@ VNet: 10.0.0.0/16
 **理由3: パフォーマンス向上**
 - TLS ハンドシェイクのオーバーヘッド削減
 - 内部通信の高速化
+
+**理由4: Front Door → AppGW は Private Link で保護**
+- Private Link トンネル内の通信は Azure バックボーン経由
+- インターネットを経由しない閉域接続
+- Front Door 側では HTTPS で暗号化されている
 
 **代替案: 完全HTTPS化**
 - より厳格なセキュリティ要件の場合
