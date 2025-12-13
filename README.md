@@ -51,15 +51,31 @@ Front Door、APIM、VNet統合など、本番環境を想定した構成を Bice
 
 ---
 
+### 🔒 パス4: エンタープライズグレード構成（1日～）
+**「本格的なセキュア構成を実装したい」方向け**
+
+Azure Firewall、Application Gateway、Private Endpoint を組み合わせた、完全閉域のエンタープライズ構成を構築します。
+
+1. **パス3を完了** しておく（本番構成の理解が必要）
+2. **[エンタープライズデプロイガイド](ENTERPRISE_DEPLOYMENT.md)** で本格構成をデプロイ
+3. Front Door → Private Endpoint → Application Gateway → Azure Firewall → APIM → Functions → SQL の完全フロー
+
+✅ このパスを完了すると: IDPS有効のFirewall、VNet統合、Private Endpoint による完全閉域構成を実装できます
+
+---
+
 ## 📖 ドキュメント一覧と使い方
 
 | ドキュメント | 対象者 | 目的 |
 |------------|--------|------|
 | **[NAVIGATION.md](NAVIGATION.md)** | 全員 | ドキュメントマップと迷った時のガイド |
+| **[COMPARISON.md](COMPARISON.md)** | 全員 | 4つのパスの詳細比較と選択ガイド |
 | **[QUICKSTART.md](QUICKSTART.md)** | 初めての方 | 最短でAPIを動かす（パス1） |
 | **[README.md](README.md)** （本ページ） | 全員 | ハンズオンの全体像と標準フロー（パス2） |
 | **[LOCAL_SETUP.md](LOCAL_SETUP.md)** | Windows環境の方 | ローカル開発ツールのインストール手順 |
 | **[BICEP_README.md](BICEP_README.md)** | 本番構成を試したい方 | IaCで本番レベルをデプロイ（パス3） |
+| **[ENTERPRISE_DEPLOYMENT.md](ENTERPRISE_DEPLOYMENT.md)** | エンタープライズ構成を試したい方 | 本格的なセキュア構成のデプロイ（パス4） |
+| **[ARCHITECTURE.md](ARCHITECTURE.md)** | 技術者 | アーキテクチャの詳細と設計思想 |
 | **[ハンズオンTips.md](ハンズオンTips.md)** | 上級者 | 設計論点とベストプラクティス |
 | **[sample-usage.md](sample-usage.md)** | 全員 | API の使い方とトラブルシューティング |
 | **[sql/README.md](sql/README.md)** | 全員 | SQL スクリプトの説明 |
@@ -73,7 +89,9 @@ Front Door、APIM、VNet統合など、本番環境を想定した構成を Bice
 > 
 > - `customer/`: Azure Functions の HTTP トリガー（GET のみサポート）
 > - `sql/`: Azure SQL Database セットアップスクリプト
-> - `main.bicep`: Infrastructure as Code (IaC) テンプレート
+> - `main.bicep`: Infrastructure as Code (IaC) テンプレート（パス3用）
+> - `main-enterprise.bicep`: エンタープライズ構成の IaC テンプレート（パス4用）
+> - `modules/`: Bicep モジュール（ネットワーク、Firewall、Application Gateway等）
 > - `azure-deploy.sh` / `azure-deploy.ps1`: 簡易デプロイスクリプト（パス2で使用、Bash/PowerShell）
 > - `deploy-function-code.sh` / `deploy-function-code.ps1`: Bicep デプロイ後のコードデプロイスクリプト（パス3で使用、Bash/PowerShell）
 

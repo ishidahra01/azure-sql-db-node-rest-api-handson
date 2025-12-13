@@ -1,0 +1,149 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.39.26.7824",
+      "templateHash": "613153011743357181"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "デプロイ先のリージョン"
+      }
+    },
+    "env": {
+      "type": "string",
+      "metadata": {
+        "description": "環境識別子"
+      }
+    },
+    "projectName": {
+      "type": "string",
+      "metadata": {
+        "description": "プロジェクト名"
+      }
+    },
+    "apimSubnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "API Management サブネット ID"
+      }
+    },
+    "apimPublisherEmail": {
+      "type": "string",
+      "metadata": {
+        "description": "APIM 管理者メールアドレス"
+      }
+    },
+    "apimPublisherName": {
+      "type": "string",
+      "metadata": {
+        "description": "APIM 組織名"
+      }
+    },
+    "functionAppHostName": {
+      "type": "string",
+      "metadata": {
+        "description": "Functions のホスト名"
+      }
+    }
+  },
+  "variables": {
+    "apimName": "[format('apim-{0}-{1}', parameters('projectName'), parameters('env'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ApiManagement/service",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[variables('apimName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Premium",
+        "capacity": 1
+      },
+      "properties": {
+        "publisherEmail": "[parameters('apimPublisherEmail')]",
+        "publisherName": "[parameters('apimPublisherName')]",
+        "virtualNetworkType": "Internal",
+        "virtualNetworkConfiguration": {
+          "subnetResourceId": "[parameters('apimSubnetId')]"
+        }
+      },
+      "identity": {
+        "type": "SystemAssigned"
+      }
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/apis",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[format('{0}/{1}', variables('apimName'), 'customer-api')]",
+      "properties": {
+        "displayName": "Customer API",
+        "path": "api",
+        "protocols": [
+          "http",
+          "https"
+        ],
+        "subscriptionRequired": false,
+        "isCurrent": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service', variables('apimName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/apis/operations",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', variables('apimName'), 'customer-api', 'get-customer-by-id')]",
+      "properties": {
+        "displayName": "Get Customer By ID",
+        "method": "GET",
+        "urlTemplate": "/customer/{id}",
+        "templateParameters": [
+          {
+            "name": "id",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', variables('apimName'), 'customer-api')]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/apis/operations/policies",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[format('{0}/{1}/{2}/{3}', variables('apimName'), 'customer-api', 'get-customer-by-id', 'policy')]",
+      "properties": {
+        "format": "rawxml",
+        "value": "[format('<policies>\n  <inbound>\n    <base />\n    <set-backend-service base-url=\"https://{0}/api\" />\n  </inbound>\n  <backend>\n    <base />\n  </backend>\n  <outbound>\n    <base />\n  </outbound>\n  <on-error>\n    <base />\n  </on-error>\n</policies>\n', parameters('functionAppHostName'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis/operations', variables('apimName'), 'customer-api', 'get-customer-by-id')]"
+      ]
+    }
+  ],
+  "outputs": {
+    "apimId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.ApiManagement/service', variables('apimName'))]"
+    },
+    "apimName": {
+      "type": "string",
+      "value": "[variables('apimName')]"
+    },
+    "apimPrivateIp": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ApiManagement/service', variables('apimName')), '2023-05-01-preview').privateIPAddresses[0]]"
+    },
+    "apimGatewayUrl": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ApiManagement/service', variables('apimName')), '2023-05-01-preview').gatewayUrl]"
+    }
+  }
+}

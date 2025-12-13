@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "japaneast"
+    },
+    "env": {
+      "value": "prod"
+    },
+    "projectName": {
+      "value": "handson"
+    },
+    "sqlAdminUsername": {
+      "value": "sqladmin"
+    },
+    "sqlAdminPassword": {
+      "value": "YOUR_STRONG_PASSWORD_HERE"
+    },
+    "apimPublisherEmail": {
+      "value": "admin@example.com"
+    },
+    "apimPublisherName": {
+      "value": "Contoso"
+    }
+  }
+}
