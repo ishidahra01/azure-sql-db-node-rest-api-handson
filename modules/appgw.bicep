@@ -131,7 +131,8 @@ resource applicationGateway 'Microsoft.Network/applicationGateways@2023-05-01' =
         }
       }
     ]
-    // HTTP と HTTPS リスナー (証明書がある場合は HTTPS を使用)
+    // HTTP と HTTPS リスナー (すべて Private IP を使用)
+    // Public IP は Private Link 機能のための仕様上の要件のみ
     httpListeners: hasCertificate ? [
       {
         name: 'httpsListener'
@@ -152,7 +153,7 @@ resource applicationGateway 'Microsoft.Network/applicationGateways@2023-05-01' =
         name: 'httpListener'
         properties: {
           frontendIPConfiguration: {
-            id: resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', appGwName, 'appGwPublicFrontendIp')
+            id: resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', appGwName, 'appGwPrivateFrontendIp')
           }
           frontendPort: {
             id: resourceId('Microsoft.Network/applicationGateways/frontendPorts', appGwName, 'port_80')
@@ -257,5 +258,6 @@ resource applicationGateway 'Microsoft.Network/applicationGateways@2023-05-01' =
 output appGwId string = applicationGateway.id
 output appGwName string = applicationGateway.name
 output appGwPublicIp string = publicIp.properties.ipAddress
-output appGwPrivateIp string = applicationGateway.properties.frontendIPConfigurations[1].properties.privateIPAddress
+// Private IP を名前で検索（インデックスに依存しない）
+output appGwPrivateIp string = filter(applicationGateway.properties.frontendIPConfigurations, config => config.name == 'appGwPrivateFrontendIp')[0].properties.privateIPAddress
 output privateLinkConfigurationId string = '${applicationGateway.id}/privateLinkConfigurations/${privateLinkConfigName}'
