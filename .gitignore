@@ -66,6 +66,12 @@ typings/
 main.parameters.json
 main-enterprise.parameters.json
 
+# Bicep compiled ARM templates (generated build artifacts)
+*.bicep.json
+main.json
+main-enterprise.json
+modules/*.json
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 
