@@ -6,17 +6,20 @@
 
 ```
 [Internet]
-    ↓ HTTPS
+    ↓ HTTPS (Azure Front Door 既定ドメイン)
 [Azure Front Door Premium]
-    ↓ Private Endpoint
+    ↓ Private Link (Front Door Premium 必須)
 [Application Gateway (WAF v2)]
-    ↓ HTTP (証明書管理の簡略化のため)
+    - Private frontend IP: 実際の着地点
+    - Public frontend IP: 仕様上の存在要件（基本未使用）
+    - TLS 終端 (証明書管理)
+    ↓ HTTP (VNet内部、証明書運用の簡素化)
 [Azure Firewall Premium (IDPS有効)]
     ↓ HTTP
 [API Management Premium (Internal VNet)]
     ↓ Private Endpoint
 [Azure Functions Premium (VNet統合)]
-    ↓ Private Endpoint
+    ↓ Private Endpoint (TDS + TLS)
 [Azure SQL Database (Private Endpoint)]
 ```
 
@@ -34,15 +37,18 @@
 - **Front Door**: グローバルなエントリポイントとして DDoS 保護
 
 ### 通信プロトコル
-- Internet → Front Door: **HTTPS**
-- Front Door → Application Gateway: **HTTP** (Private Link経由)
-- Application Gateway → Firewall: **HTTP** (VNet内部)
+- Internet → Front Door: **HTTPS** (Azure Front Door 既定ドメイン)
+- Front Door → Application Gateway: **HTTP** (Private Link トンネル経由)
+- Application Gateway (TLS 終端): **HTTP** (VNet内部)
 - Firewall → API Management: **HTTP** (VNet内部)
 - API Management → Functions: **HTTPS** (Private Endpoint経由)
-- Functions → SQL Database: **TLS暗号化** (Private Endpoint経由)
+- Functions → SQL Database: **TDS + TLS** (必須、Private Endpoint経由)
 
-> **注**: Application Gateway 以降を HTTP にすることで、証明書管理の複雑さを回避しています。
-> VNet 内部の通信は Azure のネットワーク分離により保護されます。
+> **重要な設計判断**:
+> - **Front Door → AppGW を Private Link にする理由**: インターネット露出を最小化、Azure バックボーン経由の閉域接続
+> - **AppGW が Public + Private IP を持つ理由**: Private Link 機能のための仕様上の要件。Public IP は実運用では未使用
+> - **Application Gateway で TLS 終端する理由**: 証明書管理を一箇所に集約、内部は HTTP で簡素化
+> - **VNet 内部を HTTP にする理由**: 証明書運用の複雑さを回避、Azure のネットワーク分離で保護
 
 ## 🛠️ 前提条件
 
@@ -69,6 +75,60 @@
   - その他 (Storage, App Insights): ~$10
 
 > **重要**: このアーキテクチャは本番環境向けです。学習目的の場合は `main.bicep` (簡易版) を使用してください。
+
+## 🔐 証明書の準備（オプション）
+
+Application Gateway で TLS 終端を行う場合、証明書が必要です。
+
+### 証明書の取得方法
+
+**方法 1: App Service Certificate を使用（推奨）**
+
+App Service Certificate は Azure が管理する証明書で、自動更新が可能です。
+
+1. Azure Portal で "App Service Certificates" を検索
+2. 新しい証明書を作成
+   - ドメイン名を指定（例: `api.example.com`）
+   - 証明書の検証（DNS または HTTP）
+3. Key Vault にエクスポート
+4. 証明書を Base64 エンコードして Bicep パラメータに設定
+
+**方法 2: 自己署名証明書（開発環境のみ）**
+
+```bash
+# OpenSSL で自己署名証明書を作成
+openssl req -x509 -newkey rsa:4096 -keyout appgw-key.pem -out appgw-cert.pem -days 365 -nodes
+
+# PFX 形式に変換
+openssl pkcs12 -export -out appgw-cert.pfx -inkey appgw-key.pem -in appgw-cert.pem -password pass:YourPassword123
+
+# Base64 エンコード
+base64 -i appgw-cert.pfx -o appgw-cert.b64
+```
+
+**方法 3: Azure Front Door の既定ドメインを使用（証明書不要）**
+
+証明書を設定しない場合:
+- Front Door の既定ドメイン（`*.azurefd.net`）で HTTPS 終端
+- Front Door → AppGW は HTTP（Private Link トンネル経由）
+- AppGW も HTTP で動作（証明書不要）
+
+### 証明書パラメータの設定
+
+証明書を使用する場合、パラメータファイルに以下を追加:
+
+```json
+{
+  "tlsCertificateData": {
+    "value": "<Base64エンコードされた証明書データ>"
+  },
+  "tlsCertificatePassword": {
+    "value": "<証明書のパスワード>"
+  }
+}
+```
+
+> **注意**: 本番環境では、証明書を Key Vault に保存し、Bicep から参照することを推奨します。
 
 ## 📋 デプロイ手順
 
@@ -236,9 +296,30 @@ Functions in func-handson-prod:
         Invoke url: https://func-handson-prod.azurewebsites.net/api/customer/{id}
 ```
 
+### Step 9: Private Link 接続の承認
+
+デプロイ後、Front Door からの Private Link 接続要求を承認する必要があります。
+
+```bash
+# Azure Portal での承認手順:
+# 1. Application Gateway のリソースを開く
+# 2. 左メニューから "Settings" → "Private Link" を選択
+# 3. "Private endpoint connections" タブを開く
+# 4. Front Door からの接続要求（Status: Pending）を選択
+# 5. "Approve" をクリック
+
+# または Azure CLI で承認:
+az network application-gateway private-link approve \
+  --resource-group rg-handson-prod \
+  --gateway-name appgw-handson-prod \
+  --name <private-endpoint-connection-name>
+```
+
+> **重要**: Private Link 接続が承認されるまで、Front Door から Application Gateway への接続は確立されません。
+
 ## ✅ 動作確認
 
-### Step 9: エンドポイントのテスト
+### Step 10: エンドポイントのテスト
 
 **1. Front Door 経由でアクセス（推奨）**
 
@@ -444,7 +525,34 @@ A4: Private Endpoint 自体は月額 ~$8 ですが、データ転送料金が別
 
 **Q5: Front Door の Private Link 接続は本当に必要ですか？**
 
-A5: セキュリティ要件によります。このテンプレートでは Application Gateway のパブリック IP を使用していますが、より厳格なセキュリティが必要な場合は Private Link Origin を使用できます。
+A5: エンタープライズ構成では推奨します。Private Link により以下のメリットがあります:
+- インターネット露出の最小化（Front Door のみが公開エンドポイント）
+- Azure バックボーンネットワーク経由の閉域接続
+- Application Gateway のパブリック IP は仕様上存在するが実運用では未使用
+- より厳格なセキュリティ要件に対応
+
+**Q6: Application Gateway が Public + Private IP を持つのはなぜですか？**
+
+A6: これは Private Link 機能のための Azure の仕様です:
+- Private Link をサポートするには、両方のフロントエンド IP が必要
+- Private IP: Front Door からの実際の着地点
+- Public IP: Private Link 機能のための技術的要件（基本未使用）
+- Private IP のみの構成では Private Link をサポートしません
+
+**Q7: 証明書がない場合はどうなりますか？**
+
+A7: 証明書パラメータを空にした場合:
+- Front Door が HTTPS 終端（`*.azurefd.net` ドメイン）
+- Front Door → AppGW は HTTP（Private Link トンネル経由）
+- AppGW も HTTP で動作
+- カスタムドメインは使用不可ですが、開発環境では十分
+
+**Q8: Private Link 接続の承認を忘れた場合は？**
+
+A8: Front Door からのトラフィックが Application Gateway に到達しません:
+- Front Door のヘルスチェックが失敗
+- API リクエストがタイムアウト
+- Azure Portal の AppGW → Private Link で接続要求を確認し承認してください
 
 ---
 

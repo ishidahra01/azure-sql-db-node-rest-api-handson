@@ -23,6 +23,14 @@ param apimPublisherEmail string = 'admin@example.com'
 @description('API Management の組織名')
 param apimPublisherName string = 'Contoso'
 
+@description('Application Gateway の TLS 証明書データ (Base64エンコード) - オプション')
+@secure()
+param tlsCertificateData string = ''
+
+@description('Application Gateway の TLS 証明書パスワード - オプション')
+@secure()
+param tlsCertificatePassword string = ''
+
 // 変数
 var uniqueId = uniqueString(resourceGroup().id)
 var storageAccountName = 'st${projectName}${env}${take(uniqueId, 8)}'
@@ -88,6 +96,8 @@ module appGw 'modules/appgw.bicep' = {
     projectName: projectName
     appGwSubnetId: network.outputs.appGwSubnetId
     backendIpAddress: firewall.outputs.firewallPrivateIp
+    tlsCertificateData: tlsCertificateData
+    tlsCertificatePassword: tlsCertificatePassword
   }
 }
 
@@ -142,7 +152,9 @@ module frontDoor 'modules/frontdoor.bicep' = {
   params: {
     env: env
     projectName: projectName
-    appGwPublicIp: appGw.outputs.appGwPublicIp
+    appGwResourceId: appGw.outputs.appGwId
+    appGwPrivateLinkConfigId: appGw.outputs.privateLinkConfigurationId
+    appGwPrivateIp: appGw.outputs.appGwPrivateIp
   }
 }
 
@@ -165,16 +177,24 @@ output deploymentInstructions string = '''
 デプロイが完了しました！
 
 次のステップ:
-1. SQL スクリプトの実行:
+1. Front Door Private Link の承認:
+   - Azure Portal で Application Gateway を開く
+   - Settings → Private Link を選択
+   - Front Door からの接続要求を承認
+
+2. SQL スクリプトの実行:
    - Azure Portal で SQL Database を開く
    - Query Editor を使用して sql/HandsOnSetup.sql を実行
 
-2. Function App へのコードデプロイ:
+3. Function App へのコードデプロイ:
    func azure functionapp publish ${functions.outputs.functionAppName}
 
-3. 動作確認:
-   - Front Door 経由: ${frontDoor.outputs.frontDoorEndpointUrl}/api/customer/123
-   - Application Gateway 経由: http://${appGw.outputs.appGwPublicIp}/api/customer/123
+4. 動作確認:
+   - Front Door 経由 (推奨): ${frontDoor.outputs.frontDoorEndpointUrl}/api/customer/123
+   - Application Gateway 経由 (Public IP): http://${appGw.outputs.appGwPublicIp}/api/customer/123
 
-注意: API Management と Front Door のプロビジョニングには 30〜60 分かかります。
+注意: 
+- API Management と Front Door のプロビジョニングには 30〜60 分かかります
+- Private Link 接続の承認後、Front Door → AppGW の接続が確立されます
+- TLS 証明書を設定していない場合、AppGW は HTTP で動作します
 '''
